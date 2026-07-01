@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SKLADY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --paper:#f4f2ee;
+  --panel:#ffffff;
+  --ink:#20242c;
+  --ink-dim:#5a6070;
+  --line:#e2ded5;
+  --accent:#c9862f;
+  --accent-ink:#3a2a10;
+  --good:#3f7a56;
+  --bad:#b0452f;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(32,36,44,.06), 0 4px 16px rgba(32,36,44,.05);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Inter',system-ui,sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+h1,h2,h3,.display{
+  font-family:'Barlow Condensed',system-ui,sans-serif;
+  font-weight:700;
+  letter-spacing:.01em;
+  text-transform:uppercase;
+  margin:0;
+}
+button{font-family:inherit;cursor:pointer;border:none;}
+input,select,textarea{font-family:inherit;}
+
+/* ---------- LOGIN ---------- */
+#login-screen{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+}
+.login-box{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:36px 32px;
+  width:100%;
+  max-width:380px;
+}
+.login-brand{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  margin-bottom:4px;
+}
+.login-brand .crate{
+  width:14px;height:14px;
+  background:var(--accent);
+  border-radius:3px;
+  display:inline-block;
+}
+.login-brand h1{font-size:30px;}
+.login-sub{color:var(--ink-dim);font-size:13px;margin-bottom:26px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.field input{
+  width:100%;padding:11px 12px;
+  border:1px solid var(--line);border-radius:7px;
+  font-size:15px;background:#fbfaf8;
+}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent);}
+.btn{
+  padding:11px 18px;border-radius:7px;font-weight:600;font-size:14px;
+  transition:filter .12s ease;
+}
+.btn:hover{filter:brightness(0.95);}
+.btn:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px;}
+.btn-primary{background:var(--ink);color:#fff;width:100%;margin-top:6px;}
+.btn-accent{background:var(--accent);color:var(--accent-ink);}
+.btn-ghost{background:transparent;color:var(--ink-dim);border:1px solid var(--line);}
+.btn-danger{background:var(--bad);color:#fff;}
+.login-error{color:var(--bad);font-size:13px;margin-top:10px;min-height:16px;}
+.login-toggle{text-align:center;margin-top:16px;font-size:13px;color:var(--ink-dim);}
+.login-toggle a{color:var(--ink);cursor:pointer;font-weight:600;text-decoration:underline;}
+
+/* ---------- APP SHELL ---------- */
+#app{min-height:100vh;display:flex;flex-direction:column;}
+header.topbar{
+  background:var(--ink);color:#fff;
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;
+}
+.topbar-brand{display:flex;align-items:center;gap:8px;}
+.topbar-brand .crate{width:12px;height:12px;background:var(--accent);border-radius:3px;}
+.topbar-brand h1{font-size:22px;color:#fff;}
+.topbar-user{display:flex;align-items:center;gap:10px;font-size:13px;}
+.role-chip{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.14);
+}
+.topbar-user .name{font-weight:600;}
+.topbar-user button{background:transparent;color:#cfd2da;font-size:12px;text-decoration:underline;}
+
+nav.tabs{
+  display:flex;gap:4px;padding:10px 16px 0 16px;
+  background:var(--panel);border-bottom:1px solid var(--line);
+  overflow-x:auto;
+}
+nav.tabs button{
+  background:transparent;padding:10px 14px;font-size:13px;font-weight:600;
+  color:var(--ink-dim);border-bottom:3px solid transparent;white-space:nowrap;
+  display:flex;align-items:center;gap:7px;
+}
+nav.tabs button.active{color:var(--ink);border-bottom-color:var(--accent);}
+.tag-dot{width:9px;height:9px;border-radius:3px;display:inline-block;flex:none;}
+
+main{flex:1;padding:20px;max-width:1100px;margin:0 auto;width:100%;}
+
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:20px;margin-bottom:18px;
+}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+.section-title h2{font-size:22px;}
+
+/* overview grid */
+.wh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.wh-card{
+  border-radius:var(--radius);padding:16px;color:#fff;cursor:pointer;
+  box-shadow:var(--shadow);transition:transform .12s ease;
+  display:flex;flex-direction:column;gap:6px;min-height:110px;justify-content:space-between;
+}
+.wh-card:hover{transform:translateY(-2px);}
+.wh-card .wh-name{font-family:'Barlow Condensed';font-size:22px;font-weight:700;text-transform:uppercase;}
+.wh-card .wh-meta{font-size:12px;opacity:.85;}
+.wh-card .wh-count{font-family:'JetBrains Mono';font-size:28px;font-weight:600;}
+
+table{width:100%;border-collapse:collapse;font-size:14px;}
+th{
+  text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+  color:var(--ink-dim);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);
+}
+td{padding:10px 10px;border-bottom:1px solid var(--line);}
+tr:last-child td{border-bottom:none;}
+.qty{font-family:'JetBrains Mono';font-weight:600;}
+.low-stock{color:var(--bad);}
+.empty-row{color:var(--ink-dim);font-style:italic;text-align:center;padding:24px;}
+
+.movement-type{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  padding:3px 8px;border-radius:20px;display:inline-block;
+}
+.mt-prijem{background:#e3efe8;color:var(--good);}
+.mt-vydej{background:#f4e5e0;color:var(--bad);}
+.mt-presun{background:#e7e9f2;color:#4a4a8a;}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.filters select{padding:8px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;background:#fbfaf8;}
+
+/* modal */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(20,20,24,.45);
+  display:flex;align-items:center;justify-content:center;padding:16px;z-index:50;
+}
+.modal{
+  background:var(--panel);border-radius:var(--radius);padding:24px;width:100%;max-width:420px;
+  box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;
+}
+.modal h3{font-size:22px;margin-bottom:16px;}
+.modal .field{margin-bottom:13px;}
+.modal select,.modal textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:7px;font-size:14px;background:#fbfaf8;
+}
+.modal-actions{display:flex;gap:8px;margin-top:18px;}
+.modal-actions .btn{flex:1;}
+.type-toggle{display:flex;gap:6px;margin-bottom:16px;}
+.type-toggle button{flex:1;padding:9px;border-radius:7px;border:1px solid var(--line);background:#fbfaf8;font-size:13px;font-weight:600;color:var(--ink-dim);}
+.type-toggle button.active.tt-prijem{background:#e3efe8;color:var(--good);border-color:var(--good);}
+.type-toggle button.active.tt-vydej{background:#f4e5e0;color:var(--bad);border-color:var(--bad);}
+.type-toggle button.active.tt-presun{background:#e7e9f2;color:#4a4a8a;border-color:#4a4a8a;}
+.form-error{color:var(--bad);font-size:13px;margin-top:4px;}
+
+.fab{
+  position:fixed;bottom:22px;right:22px;
+  background:var(--accent);color:var(--accent-ink);
+  width:56px;height:56px;border-radius:50%;font-size:28px;font-weight:700;
+  box-shadow:0 6px 20px rgba(201,134,47,.5);
+  display:flex;align-items:center;justify-content:center;z-index:20;
+}
+
+.admin-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.admin-tabs button{padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:#fbfaf8;font-size:13px;font-weight:600;color:var(--ink-dim);}
+.admin-tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.inline-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;}
+.inline-form .field{margin-bottom:0;min-width:150px;flex:1;}
+.color-swatch{width:34px;height:34px;border-radius:7px;border:1px solid var(--line);padding:0;}
+.small-note{font-size:12px;color:var(--ink-dim);margin-top:2px;}
+.role-select{padding:6px 8px;border-radius:6px;border:1px solid var(--line);font-size:12px;}
+
+@media(max-width:600px){
+  main{padding:14px;}
+  .card{padding:15px;}
+  .topbar-user .name{display:none;}
+}
+[hidden]{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-brand"><span class="crate"></span><h1>Sklady</h1></div>
+    <div class="login-sub" id="login-subtitle">Přihlas se ke svému účtu</div>
+
+    <div id="login-form">
+      <div class="field"><label>E-mail</label><input type="email" id="login-email" autocomplete="username"></div>
+      <div class="field"><label>Heslo</label><input type="password" id="login-password" autocomplete="current-password"></div>
+      <button class="btn btn-primary" id="btn-login">Přihlásit se</button>
+      <div class="login-error" id="login-error"></div>
+      <div class="login-toggle">Nemáš účet? <a id="show-register">Zaregistrovat se</a></div>
+    </div>
+
+    <div id="register-form" hidden>
+      <div class="field"><label>Jméno a příjmení</label><input type="text" id="reg-name"></div>
+      <div class="field"><label>E-mail</label><input type="email" id="reg-email" autocomplete="username"></div>
+      <div class="field"><label>Heslo</label><input type="password" id="reg-password" autocomplete="new-password"></div>
+      <button class="btn btn-primary" id="btn-register">Vytvořit účet</button>
+      <div class="login-error" id="register-error"></div>
+      <div class="small-note">Nový účet dostane roli „skladník". Admin ti může roli později změnit v administraci.</div>
+      <div class="login-toggle">Už máš účet? <a id="show-login">Přihlásit se</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="topbar-brand"><span class="crate"></span><h1>Sklady</h1></div>
+    <div class="topbar-user">
+      <span class="role-chip" id="user-role-chip">—</span>
+      <span class="name" id="user-name">—</span>
+      <button id="btn-logout">Odhlásit</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <main id="main-content"></main>
+
+  <button class="fab" id="fab-add-movement" title="Nový pohyb">+</button>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+/* ================= CONFIG ================= */
+// !!! DOPLŇ SVOJE ÚDAJE ZE SUPABASE (Project Settings -> API) !!!
+const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= STATE ================= */
+let state = {
+  session: null,
+  profile: null,
+  profiles: [],
+  warehouses: [],
+  products: [],
+  stock: [],       // {product_id, warehouse_id, quantity}
+  movements: [],
+  activeTab: "overview", // 'overview' | warehouse.id | 'history' | 'admin'
+  adminTab: "products",
+};
+
+const el = (id) => document.getElementById(id);
+const fmtDate = (iso) => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('cs-CZ') + ' ' + d.toLocaleTimeString('cs-CZ', {hour:'2-digit',minute:'2-digit'});
+};
+const warehouseById = (id) => state.warehouses.find(w => w.id === id);
+const productById = (id) => state.products.find(p => p.id === id);
+const profileById = (id) => state.profiles.find(p => p.id === id);
+const stockFor = (productId, warehouseId) => {
+  const s = state.stock.find(s => s.product_id === productId && s.warehouse_id === warehouseId);
+  return s ? Number(s.quantity) : 0;
+};
+
+/* ================= AUTH ================= */
+el('show-register').onclick = () => { el('login-form').hidden = true; el('register-form').hidden = false; el('login-subtitle').textContent = 'Vytvoř si nový účet'; };
+el('show-login').onclick = () => { el('register-form').hidden = true; el('login-form').hidden = false; el('login-subtitle').textContent = 'Přihlas se ke svému účtu'; };
+
+el('btn-login').onclick = async () => {
+  el('login-error').textContent = '';
+  const email = el('login-email').value.trim();
+  const password = el('login-password').value;
+  if (!email || !password) { el('login-error').textContent = 'Vyplň e-mail i heslo.'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) el('login-error').textContent = 'Nepodařilo se přihlásit: ' + error.message;
+};
+
+el('btn-register').onclick = async () => {
+  el('register-error').textContent = '';
+  const full_name = el('reg-name').value.trim();
+  const email = el('reg-email').value.trim();
+  const password = el('reg-password').value;
+  if (!full_name || !email || !password) { el('register-error').textContent = 'Vyplň všechna pole.'; return; }
+  if (password.length < 6) { el('register-error').textContent = 'Heslo musí mít alespoň 6 znaků.'; return; }
+  const { error } = await sb.auth.signUp({ email, password, options: { data: { full_name } } });
+  if (error) { el('register-error').textContent = 'Registrace se nezdařila: ' + error.message; return; }
+  el('register-error').style.color = 'var(--good)';
+  el('register-error').textContent = 'Účet vytvořen. Pokud je vyžadováno potvrzení e-mailu, zkontroluj schránku, jinak se rovnou přihlas.';
+};
+
+el('btn-logout').onclick = async () => { await sb.auth.signOut(); };
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  state.session = session;
+  if (session) {
+    await loadProfile();
+    if (state.profile) {
+      el('login-screen').hidden = true;
+      el('app').hidden = false;
+      await loadAllData();
+      renderTabs();
+      renderTab();
+    }
+  } else {
+    el('app').hidden = true;
+    el('login-screen').hidden = false;
+  }
+});
+
+async function loadProfile() {
+  const { data, error } = await sb.from('profiles').select('*').eq('id', state.session.user.id).single();
+  if (error) { console.error(error); return; }
+  state.profile = data;
+  el('user-name').textContent = data.full_name;
+  el('user-role-chip').textContent = data.role === 'admin' ? 'Admin' : 'Skladník';
+}
+
+/* ================= DATA LOADING ================= */
+async function loadAllData() {
+  const [wh, pr, st, mv, pf] = await Promise.all([
+    sb.from('warehouses').select('*').order('name'),
+    sb.from('products').select('*').order('name'),
+    sb.from('stock').select('*'),
+    sb.from('movements').select('*').order('created_at', { ascending: false }).limit(300),
+    sb.from('profiles').select('*'),
+  ]);
+  state.warehouses = wh.data || [];
+  state.products = pr.data || [];
+  state.stock = st.data || [];
+  state.movements = mv.data || [];
+  state.profiles = pf.data || [];
+}
+
+// realtime: refresh on any change to stock/movements/products/warehouses
+sb.channel('sklady-live')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'stock' }, refreshAndRender)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'movements' }, refreshAndRender)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, refreshAndRender)
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'warehouses' }, refreshAndRender)
+  .subscribe();
+
+async function refreshAndRender() {
+  if (!state.session) return;
+  await loadAllData();
+  renderTabs();
+  renderTab();
+}
+
+/* ================= TABS ================= */
+function renderTabs() {
+  const tabs = el('tabs');
+  let html = `<button data-tab="overview" class="${state.activeTab==='overview'?'active':''}">Přehled</button>`;
+  state.warehouses.forEach(w => {
+    html += `<button data-tab="${w.id}" class="${state.activeTab===w.id?'active':''}">
+      <span class="tag-dot" style="background:${w.color}"></span>${escapeHtml(w.name)}
+    </button>`;
+  });
+  html += `<button data-tab="history" class="${state.activeTab==='history'?'active':''}">Historie</button>`;
+  if (state.profile?.role === 'admin') {
+    html += `<button data-tab="admin" class="${state.activeTab==='admin'?'active':''}">Administrace</button>`;
+  }
+  tabs.innerHTML = html;
+  tabs.querySelectorAll('button').forEach(b => b.onclick = () => { state.activeTab = b.dataset.tab; renderTabs(); renderTab(); });
+}
+
+function renderTab() {
+  const main = el('main-content');
+  if (state.activeTab === 'overview') return renderOverview(main);
+  if (state.activeTab === 'history') return renderHistory(main);
+  if (state.activeTab === 'admin') return renderAdmin(main);
+  return renderWarehouse(main, state.activeTab);
+}
+
+/* ================= OVERVIEW ================= */
+function renderOverview(main) {
+  let html = `<div class="section-title"><h2>Přehled skladů</h2></div><div class="wh-grid">`;
+  state.warehouses.forEach(w => {
+    const items = state.stock.filter(s => s.warehouse_id === w.id && Number(s.quantity) > 0);
+    const totalUnits = items.reduce((a,s)=>a+Number(s.quantity),0);
+    html += `<div class="wh-card" style="background:${w.color}" data-goto="${w.id}">
+      <div class="wh-name">${escapeHtml(w.name)}</div>
+      <div>
+        <div class="wh-count">${items.length}</div>
+        <div class="wh-meta">položek skladem · ${totalUnits} ks celkem</div>
+      </div>
+    </div>`;
+  });
+  if (!state.warehouses.length) html += `<div class="empty-row">Zatím nejsou založené žádné sklady.</div>`;
+  html += `</div>`;
+  main.innerHTML = html;
+  main.querySelectorAll('.wh-card').forEach(c => c.onclick = () => { state.activeTab = c.dataset.goto; renderTabs(); renderTab(); });
+}
+
+/* ================= SINGLE WAREHOUSE ================= */
+function renderWarehouse(main, warehouseId) {
+  const w = warehouseById(warehouseId);
+  if (!w) { state.activeTab = 'overview'; return renderTab(); }
+  const rows = state.stock
+    .filter(s => s.warehouse_id === w.id)
+    .map(s => ({ ...s, product: productById(s.product_id) }))
+    .filter(s => s.product)
+    .sort((a,b) => a.product.name.localeCompare(b.product.name, 'cs'));
+
+  let html = `<div class="card">
+    <div class="section-title">
+      <h2><span class="tag-dot" style="background:${w.color}"></span> ${escapeHtml(w.name)}</h2>
+      <button class="btn btn-accent" id="btn-movement-here">+ Nový pohyb</button>
+    </div>
+    <table><thead><tr><th>Produkt</th><th>Množství</th></tr></thead><tbody>`;
+  if (!rows.length) {
+    html += `<tr><td colspan="2" class="empty-row">Na tomto skladu zatím nic není.</td></tr>`;
+  } else {
+    rows.forEach(r => {
+      html += `<tr><td>${escapeHtml(r.product.name)}</td><td class="qty ${Number(r.quantity)===0?'low-stock':''}">${r.quantity}</td></tr>`;
+    });
+  }
+  html += `</tbody></table></div>`;
+  main.innerHTML = html;
+  el('btn-movement-here').onclick = () => openMovementModal({ warehouseId: w.id });
+}
+
+/* ================= HISTORY ================= */
+function renderHistory(main) {
+  const whOptions = state.warehouses.map(w => `<option value="${w.id}">${escapeHtml(w.name)}</option>`).join('');
+  let html = `<div class="card">
+    <div class="section-title"><h2>Historie pohybů</h2></div>
+    <div class="filters">
+      <select id="filter-wh"><option value="">Všechny sklady</option>${whOptions}</select>
+      <select id="filter-type"><option value="">Všechny typy</option><option value="prijem">Příjem</option><option value="vydej">Výdej</option><option value="presun">Přesun</option></select>
+    </div>
+    <table><thead><tr><th>Kdy</th><th>Typ</th><th>Produkt</th><th>Sklad</th><th>Množství</th><th>Kdo</th><th>Poznámka</th></tr></thead>
+    <tbody id="history-body"></tbody></table>
+  </div>`;
+  main.innerHTML = html;
+  el('filter-wh').onchange = renderHistoryRows;
+  el('filter-type').onchange = renderHistoryRows;
+  renderHistoryRows();
+}
+
+function renderHistoryRows() {
+  const whFilter = el('filter-wh')?.value;
+  const typeFilter = el('filter-type')?.value;
+  let list = state.movements;
+  if (typeFilter) list = list.filter(m => m.type === typeFilter);
+  if (whFilter) list = list.filter(m => m.warehouse_id === whFilter || m.from_warehouse_id === whFilter || m.to_warehouse_id === whFilter);
+
+  const typeLabel = { prijem: ['Příjem','mt-prijem'], vydej: ['Výdej','mt-vydej'], presun: ['Přesun','mt-presun'] };
+  const body = el('history-body');
+  if (!list.length) { body.innerHTML = `<tr><td colspan="7" class="empty-row">Žádné záznamy.</td></tr>`; return; }
+
+  body.innerHTML = list.map(m => {
+    const prod = productById(m.product_id);
+    const [label, cls] = typeLabel[m.type] || [m.type, ''];
+    let whText = '';
+    if (m.type === 'presun') {
+      const from = warehouseById(m.from_warehouse_id);
+      const to = warehouseById(m.to_warehouse_id);
+      whText = `${from?from.name:'?'} → ${to?to.name:'?'}`;
+    } else {
+      const w = warehouseById(m.warehouse_id);
+      whText = w ? w.name : '?';
+    }
+    const user = profileById(m.user_id);
+    return `<tr>
+      <td class="mono">${fmtDate(m.created_at)}</td>
+      <td><span class="movement-type ${cls}">${label}</span></td>
+      <td>${escapeHtml(prod ? prod.name : '?')}</td>
+      <td>${escapeHtml(whText)}</td>
+      <td class="qty">${m.quantity}</td>
+      <td>${escapeHtml(user ? user.full_name : '?')}</td>
+      <td>${escapeHtml(m.note || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ================= ADMIN ================= */
+function renderAdmin(main) {
+  if (state.profile?.role !== 'admin') { state.activeTab = 'overview'; return renderTab(); }
+  let html = `<div class="card">
+    <div class="admin-tabs">
+      <button data-a="products" class="${state.adminTab==='products'?'active':''}">Produkty</button>
+      <button data-a="warehouses" class="${state.adminTab==='warehouses'?'active':''}">Sklady</button>
+      <button data-a="users" class="${state.adminTab==='users'?'active':''}">Uživatelé</button>
+    </div>
+    <div id="admin-content"></div>
+  </div>`;
+  main.innerHTML = html;
+  main.querySelectorAll('.admin-tabs button').forEach(b => b.onclick = () => { state.adminTab = b.dataset.a; renderAdmin(main); });
+  const content = el('admin-content');
+  if (state.adminTab === 'products') renderAdminProducts(content);
+  if (state.adminTab === 'warehouses') renderAdminWarehouses(content);
+  if (state.adminTab === 'users') renderAdminUsers(content);
+}
+
+function renderAdminProducts(content) {
+  content.innerHTML = `
+    <div class="inline-form">
+      <div class="field"><label>Nový produkt</label><input type="text" id="new-product-name" placeholder="Např. Pracovní rukavice"></div>
+      <button class="btn btn-accent" id="btn-add-product">Přidat</button>
+    </div>
+    <table><thead><tr><th>Produkt</th><th>Celkem skladem</th></tr></thead><tbody>
+      ${state.products.length ? state.products.map(p => {
+        const total = state.stock.filter(s=>s.product_id===p.id).reduce((a,s)=>a+Number(s.quantity),0);
+        return `<tr><td>${escapeHtml(p.name)}</td><td class="qty">${total}</td></tr>`;
+      }).join('') : `<tr><td colspan="2" class="empty-row">Zatím žádné produkty.</td></tr>`}
+    </tbody></table>`;
+  el('btn-add-product').onclick = async () => {
+    const name = el('new-product-name').value.trim();
+    if (!name) return;
+    const { error } = await sb.from('products').insert({ name });
+    if (error) alert('Chyba: ' + error.message);
+    else { el('new-product-name').value = ''; }
+  };
+}
+
+function renderAdminWarehouses(content) {
+  content.innerHTML = `
+    <div class="inline-form">
+      <div class="field"><label>Nový sklad</label><input type="text" id="new-wh-name" placeholder="Např. Sklad 5"></div>
+      <div class="field" style="flex:none;"><label>Barva</label><input type="color" id="new-wh-color" class="color-swatch" value="#3b5b7c"></div>
+      <button class="btn btn-accent" id="btn-add-wh">Přidat</button>
+    </div>
+    <table><thead><tr><th>Sklad</th><th>Barva</th></tr></thead><tbody>
+      ${state.warehouses.length ? state.warehouses.map(w => `<tr><td>${escapeHtml(w.name)}</td><td><span class="tag-dot" style="background:${w.color}"></span></td></tr>`).join('') : `<tr><td colspan="2" class="empty-row">Zatím žádné sklady.</td></tr>`}
+    </tbody></table>`;
+  el('btn-add-wh').onclick = async () => {
+    const name = el('new-wh-name').value.trim();
+    const color = el('new-wh-color').value;
+    if (!name) return;
+    const { error } = await sb.from('warehouses').insert({ name, color });
+    if (error) alert('Chyba: ' + error.message);
+    else { el('new-wh-name').value = ''; }
+  };
+}
+
+function renderAdminUsers(content) {
+  content.innerHTML = `<table><thead><tr><th>Jméno</th><th>Role</th></tr></thead><tbody>
+    ${state.profiles.map(p => `<tr>
+      <td>${escapeHtml(p.full_name)}${p.id===state.profile.id?' (ty)':''}</td>
+      <td><select class="role-select" data-uid="${p.id}">
+        <option value="skladnik" ${p.role==='skladnik'?'selected':''}>Skladník</option>
+        <option value="admin" ${p.role==='admin'?'selected':''}>Admin</option>
+      </select></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+  content.querySelectorAll('.role-select').forEach(s => s.onchange = async () => {
+    const { error } = await sb.from('profiles').update({ role: s.value }).eq('id', s.dataset.uid);
+    if (error) alert('Chyba: ' + error.message);
+  });
+}
+
+/* ================= MOVEMENT MODAL ================= */
+el('fab-add-movement').onclick = () => openMovementModal({});
+
+function openMovementModal({ warehouseId } = {}) {
+  const root = el('modal-root');
+  let type = 'prijem';
+  const productOptions = state.products.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+  const whOptions = state.warehouses.map(w => `<option value="${w.id}" ${w.id===warehouseId?'selected':''}>${escapeHtml(w.name)}</option>`).join('');
+
+  root.innerHTML = `
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal">
+      <h3>Nový pohyb</h3>
+      <div class="type-toggle">
+        <button class="tt-prijem active" data-t="prijem">Příjem</button>
+        <button class="tt-vydej" data-t="vydej">Výdej</button>
+        <button class="tt-presun" data-t="presun">Přesun</button>
+      </div>
+      <div class="field"><label>Produkt</label><select id="m-product">${productOptions || '<option>Nejdřív přidej produkt v administraci</option>'}</select></div>
+      <div id="m-warehouse-fields">
+        <div class="field"><label>Sklad</label><select id="m-warehouse">${whOptions}</select></div>
+      </div>
+      <div class="field"><label>Množství</label><input type="number" id="m-qty" min="0.01" step="1" placeholder="0"></div>
+      <div class="field"><label>Poznámka (nepovinné)</label><textarea id="m-note" rows="2"></textarea></div>
+      <div class="form-error" id="m-error"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="m-cancel">Zrušit</button>
+        <button class="btn btn-primary" id="m-save">Uložit</button>
+      </div>
+    </div>
+  </div>`;
+
+  function setType(t) {
+    type = t;
+    root.querySelectorAll('.type-toggle button').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    const fields = el('m-warehouse-fields');
+    if (t === 'presun') {
+      fields.innerHTML = `
+        <div class="field"><label>Z skladu</label><select id="m-from">${whOptions}</select></div>
+        <div class="field"><label>Do skladu</label><select id="m-to">${whOptions}</select></div>`;
+    } else {
+      fields.innerHTML = `<div class="field"><label>Sklad</label><select id="m-warehouse">${whOptions}</select></div>`;
+    }
+  }
+  root.querySelectorAll('.type-toggle button').forEach(b => b.onclick = () => setType(b.dataset.t));
+
+  el('modal-backdrop').addEventListener('click', (e) => { if (e.target.id === 'modal-backdrop') closeModal(); });
+  el('m-cancel').onclick = closeModal;
+
+  el('m-save').onclick = async () => {
+    const errorEl = el('m-error');
+    errorEl.textContent = '';
+    const productId = el('m-product').value;
+    const qty = parseFloat(el('m-qty').value);
+    const note = el('m-note').value.trim() || null;
+    if (!productId) { errorEl.textContent = 'Vyber produkt.'; return; }
+    if (!qty || qty <= 0) { errorEl.textContent = 'Zadej platné množství.'; return; }
+
+    let params = { p_product_id: productId, p_type: type, p_quantity: qty, p_note: note,
+      p_warehouse_id: null, p_from_warehouse_id: null, p_to_warehouse_id: null };
+
+    if (type === 'presun') {
+      const from = el('m-from').value, to = el('m-to').value;
+      if (!from || !to) { errorEl.textContent = 'Vyber oba sklady.'; return; }
+      if (from === to) { errorEl.textContent = 'Zdrojový a cílový sklad musí být různé.'; return; }
+      params.p_from_warehouse_id = from;
+      params.p_to_warehouse_id = to;
+    } else {
+      const wh = el('m-warehouse').value;
+      if (!wh) { errorEl.textContent = 'Vyber sklad.'; return; }
+      params.p_warehouse_id = wh;
+    }
+
+    const { error } = await sb.rpc('record_movement', params);
+    if (error) { errorEl.textContent = 'Chyba: ' + error.message; return; }
+    closeModal();
+    await refreshAndRender();
+  };
+}
+
+function closeModal() { el('modal-root').innerHTML = ''; }
+
+/* ================= HELPERS ================= */
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
